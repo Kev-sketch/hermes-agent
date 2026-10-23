@@ -14,7 +14,21 @@ _WIN = sys.platform == "win32"
 
 
 def homebrew_dirs() -> tuple[str, ...]:
-    return ("/opt/homebrew/bin", "/usr/local/bin") if sys.platform == "darwin" else ()
+    """Homebrew ``bin`` dirs, both prefixes, on macOS.
+
+    Homebrew installs to ``/opt/homebrew`` on Apple Silicon and ``/usr/local``
+    on Intel, so both are listed on every macOS host: the wrong one is simply a
+    directory that does not exist, and callers already probe for presence. A
+    table naming only ``/opt/homebrew`` makes every Intel host resolve
+    Homebrew-installed tools through the ambient PATH or not at all.
+
+    ``/usr/local/Homebrew/bin`` is where a Homebrew clone that was not linked
+    into ``/usr/local`` keeps its own commands (``brew`` itself, ``cmake``,
+    ``pkg-config``); it is a normal layout on Intel and is absent elsewhere.
+    """
+    if sys.platform != "darwin":
+        return ()
+    return ("/opt/homebrew/bin", "/usr/local/bin", "/usr/local/Homebrew/bin")
 
 
 def user_local_bin() -> tuple[str, ...]:

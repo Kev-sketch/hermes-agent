@@ -22,18 +22,26 @@ from tools import browser_tool_lightpanda_fallback as _lp
 
 @functools.lru_cache(maxsize=1)
 def _discover_homebrew_node_dirs() -> tuple[str, ...]:
-    """Homebrew versioned Node bin dirs (node@20, ...) that ``brew`` may not link into /opt/homebrew/bin."""
-    homebrew_opt = "/opt/homebrew/opt"
-    try:
-        entries = os.listdir(homebrew_opt) if os.path.isdir(homebrew_opt) else []
-    except OSError:
-        entries = []
-    return tuple(
-        bin_dir
-        for entry in entries
-        if entry.startswith("node") and entry != "node"
-        if os.path.isdir(bin_dir := os.path.join(homebrew_opt, entry, "bin"))
-    )
+    """Homebrew versioned Node bin dirs (node@20, ...) that ``brew`` may not link into its ``bin``.
+
+    Homebrew's prefix is ``/opt/homebrew`` on Apple Silicon and ``/usr/local`` on
+    Intel, so both ``opt`` trees are scanned: the one that does not exist yields
+    nothing, and an Intel host otherwise finds no versioned Node at all.
+    """
+    homebrew_opts = ("/opt/homebrew/opt", "/usr/local/opt")
+    dirs: list[str] = []
+    for homebrew_opt in homebrew_opts:
+        try:
+            entries = os.listdir(homebrew_opt) if os.path.isdir(homebrew_opt) else []
+        except OSError:
+            entries = []
+        dirs.extend(
+            bin_dir
+            for entry in entries
+            if entry.startswith("node") and entry != "node"
+            if os.path.isdir(bin_dir := os.path.join(homebrew_opt, entry, "bin"))
+        )
+    return tuple(dirs)
 
 
 def _browser_candidate_path_dirs() -> list[str]:
